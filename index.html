@@ -880,9 +880,18 @@ function closeOptionsModal() {
                 try {
                     const resp = await fetch(SHEET_CSV_URL);
                     const csv = await resp.text();
-                    const rows = csv.split('\n').map(r => r.split(',').map(cell => cell.trim()));
+                    let rows = csv.split('\n').map(r => r.split(',').map(cell => cell.trim()));
                     if (rows.length < 2) throw new Error('insufficient rows');
                     rows.shift(); // remove header
+                    // 👉 get SETTINGS row
+let settingsRow = rows.find(r => r[0] === 'SETTINGS');
+
+if (settingsRow) {
+    discountPercent = parseFloat(settingsRow[7]) || 0;
+}
+
+// remove SETTINGS from menu items
+rows = rows.filter(r => r[0] !== 'SETTINGS');
 
                     allItems = rows.map((row, idx) => ({
                         id: `item-${idx}-${Date.now()}`,
@@ -1051,13 +1060,25 @@ if (item.hasOptions) {
             function updateCartUI() {
                 const totalQty = Object.values(cart).reduce((acc, i) => acc + i.quantity, 0);
                 const totalPrice = Object.values(cart).reduce((acc, i) => acc + (i.price * i.quantity), 0);
+                const discountAmount = (totalPrice * discountPercent) / 100;
+const finalTotal = totalPrice - discountAmount;
 
                 cartCounter.textContent = totalQty;
                 cartTotalMini.textContent = totalPrice.toFixed(2);
                 cartCountPill.textContent = totalQty;
                 bigCartCount.textContent = totalQty;
-                drawerTotal.textContent = `$ ${totalPrice.toFixed(2)}`;
-
+                if (discountPercent > 0) {
+    drawerTotal.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:5px;">
+            <small style="color:#ffe082;">
+                Discount (${discountPercent}%): -$ ${discountAmount.toFixed(2)}
+            </small>
+            <span>$ ${finalTotal.toFixed(2)}</span>
+        </div>
+    `;
+} else {
+                drawerTotal.textContent = `$ ${finalTotal.toFixed(2)}`;
+                }
                 if (totalQty === 0) {
                     drawerItemsList.innerHTML = '<li style="text-align:center; color:#7b6855;">cart is empty</li>';
                 } else {
