@@ -742,6 +742,29 @@
             </div>
         </div>
     </div>
+    <div class="modal-overlay" id="optionsModal">
+  <div class="modal-content">
+    <h2>Choose dressing</h2>
+
+    <div class="input-group">
+      <label>Select dressing</label>
+      <select id="dressingSelect">
+        <option value="Ginger soya dressing">Ginger soya dressing</option>
+        <option value="Caesar dressing">Caesar dressing</option>
+        <option value="asian dressing">Asian dressing</option>
+          <option value="Cilantro cumin dressing">Cilantro cumin dressing</option>
+          <option value="Lemon tahini dressing">Lemon tahini dressing</option>
+          <option value="spicy lemon dressing">Spicy lemon dressing</option>
+          <option value="Mango tango dressing">Mango tango dressing</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeOptionsModal()">Cancel</button>
+      <button class="modal-btn submit" onclick="confirmOptions()">Add to cart</button>
+    </div>
+  </div>
+</div>
 
     <script>
         (function() {
@@ -783,6 +806,38 @@
 
             let allItems = [];
             let cart = {};
+            let selectedItemForOptions = null;
+
+function openOptionsModal(item) {
+    selectedItemForOptions = item;
+    document.getElementById('optionsModal').style.display = 'flex';
+}
+
+function closeOptionsModal() {
+    document.getElementById('optionsModal').style.display = 'none';
+}
+            function confirmOptions() {
+    const dressing = document.getElementById('dressingSelect').value;
+
+    const item = selectedItemForOptions;
+
+    const id = item.id + '-' + dressing; // unique per option
+
+    if (cart[id]) {
+        cart[id].quantity += 1;
+    } else {
+        cart[id] = {
+            id,
+            name: item.name + ' (' + dressing + ')',
+            price: item.price,
+            quantity: 1,
+            desc: item.description
+        };
+    }
+
+    closeOptionsModal();
+    updateCartUI();
+}
 
             // DOM elements
             const menuGrid = document.getElementById('menuGrid');
@@ -836,7 +891,8 @@
                         description: row[2] || '',
                         price: parseFloat(row[3]) || 0,
                         available: row[4]?.toLowerCase() === 'true' || row[4] === 'TRUE' || row[4] === '1' ? true : false,
-                        imageUrl: row[5] || ''
+                        imageUrl: row[5] || '',
+                        hasOptions: row[6]?.toLowerCase() === 'true'
                     })).filter(item => item.name !== 'Dish' || item.description);
 
                     if (allItems.length === 0) allItems = getSampleItems();
@@ -973,7 +1029,13 @@
     document.querySelectorAll('.add-to-cart-btn:not(:disabled)').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const id = e.currentTarget.dataset.id;
-            addToCart(id);
+            const item = allItems.find(i => i.id === id);
+
+if (item.hasOptions) {
+    openOptionsModal(item);
+} else {
+    addToCart(id);
+}
         });
     });
 }
@@ -1124,6 +1186,8 @@
             });
 
             loadFromSheet();
+            window.confirmOptions = confirmOptions;
+window.closeOptionsModal = closeOptionsModal;
             /*updateOrderButtonState();*/
         })();
     </script>
