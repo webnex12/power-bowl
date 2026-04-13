@@ -1177,7 +1177,14 @@ const finalTotal = totalPrice - discountAmount;
                 });
                 
                 const total = items.reduce((a,i)=> a + i.price*i.quantity,0);
-                msg += `%0A*TOTAL: $ ${total.toFixed(2)}*%0A`;
+                const discountAmount = (total * discountPercent) / 100;
+const finalTotal = total - discountAmount;
+                if (discountPercent > 0) {
+    msg += `%0A*SUBTOTAL: $ ${total.toFixed(2)}*%0A`;
+    msg += `*Discount (${discountPercent}%): -$ ${discountAmount.toFixed(2)}*%0A`;
+}
+
+msg += `*TOTAL: $ ${finalTotal.toFixed(2)}*%0A`;
                 msg += `─────────────────%0A`;
                 msg += `Thank you! We'll check your order.`;
 
