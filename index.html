@@ -744,10 +744,25 @@
     </div>
     <div class="modal-overlay" id="optionsModal">
   <div class="modal-content">
-    <h2>Choose dressing</h2>
+    <h2>Customize your item</h2>
 
-    <div class="input-group">
-      <label>Select dressing</label>
+    <!-- ADDONS -->
+    <div id="addonsSection" style="display:none;">
+      <label><b>Add protein</b></label>
+
+      <div>
+        <label><input type="checkbox" value="Chicken(100g)" data-price="5"> Chicken(100g) (+$5)</label><br>
+        <label><input type="checkbox" value="Smoked salmon(90g)" data-price="10"> Smoked salmon(90g) (+$10)</label><br>
+        <label><input type="checkbox" value="Tenderloin beef(100g)" data-price="8"> Tenderloin beef(100g) (+$8)</label><br>
+        <label><input type="checkbox" value="Boiled eggs(1 piece)" data-price="1"> Boiled eggs(1 piece) (+$1)</label><br>
+        <label><input type="checkbox" value="Shrimps(8 pieces)" data-price="7"> Shrimps(8 pieces) (+$7)</label><br>
+        <label><input type="checkbox" value="Goat cheese(50g)" data-price="4"> Goat cheese(50g) (+$4)</label>
+      </div>
+    </div>
+
+    <!-- DRESS -->
+    <div id="dressSection" style="display:none; margin-top:15px;">
+      <label><b>Choose dressing</b></label>
       <select id="dressingSelect">
         <option value="Ginger soya dressing">Ginger soya dressing</option>
         <option value="Caesar dressing">Caesar dressing</option>
@@ -761,7 +776,7 @@
 
     <div class="modal-actions">
       <button class="modal-btn cancel" onclick="closeOptionsModal()">Cancel</button>
-      <button class="modal-btn submit" onclick="confirmOptions()">Add to cart</button>
+      <button class="modal-btn submit" onclick="confirmOptions()">Add</button>
     </div>
   </div>
 </div>
@@ -810,6 +825,26 @@
 
 function openOptionsModal(item) {
     selectedItemForOptions = item;
+
+    const addonsSection = document.getElementById('addonsSection');
+    const dressSection = document.getElementById('dressSection');
+
+    addonsSection.style.display = 'none';
+    dressSection.style.display = 'none';
+
+    if (item.optionType === 'addons') {
+        addonsSection.style.display = 'block';
+    }
+
+    if (item.optionType === 'dress') {
+        dressSection.style.display = 'block';
+    }
+
+    if (item.optionType === 'both') {
+        addonsSection.style.display = 'block';
+        dressSection.style.display = 'block';
+    }
+
     document.getElementById('optionsModal').style.display = 'flex';
 }
 
@@ -817,21 +852,34 @@ function closeOptionsModal() {
     document.getElementById('optionsModal').style.display = 'none';
 }
             function confirmOptions() {
-    const dressing = document.getElementById('dressingSelect').value;
-
     const item = selectedItemForOptions;
 
-    const id = item.id + '-' + dressing; // unique per option
+    let name = item.name;
+    let price = item.price;
+
+    // ADDONS
+    const checked = document.querySelectorAll('#addonsSection input:checked');
+    checked.forEach(c => {
+        name += ' + ' + c.value;
+        price += parseFloat(c.dataset.price);
+    });
+
+    // DRESS
+    if (document.getElementById('dressSection').style.display !== 'none') {
+        const dressing = document.getElementById('dressingSelect').value;
+        name += ' (' + dressing + ')';
+    }
+
+    const id = name; // unique key
 
     if (cart[id]) {
         cart[id].quantity += 1;
     } else {
         cart[id] = {
             id,
-            name: item.name + ' (' + dressing + ')',
-            price: item.price,
-            quantity: 1,
-            desc: item.description
+            name,
+            price,
+            quantity: 1
         };
     }
 
@@ -901,7 +949,7 @@ rows = rows.filter(r => r[0] !== 'SETTINGS');
                         price: parseFloat(row[3]) || 0,
                         available: row[4]?.toLowerCase() === 'true' || row[4] === 'TRUE' || row[4] === '1' ? true : false,
                         imageUrl: row[5] || '',
-                        hasOptions: row[6]?.toLowerCase() === 'true'
+                        optionType: row[6]?.toLowerCase() || ''
                     })).filter(item => item.name !== 'Dish' || item.description);
 
                     if (allItems.length === 0) allItems = getSampleItems();
@@ -1040,7 +1088,7 @@ rows = rows.filter(r => r[0] !== 'SETTINGS');
             const id = e.currentTarget.dataset.id;
             const item = allItems.find(i => i.id === id);
 
-if (item.hasOptions) {
+if (item.optionType) {
     openOptionsModal(item);
 } else {
     addToCart(id);
